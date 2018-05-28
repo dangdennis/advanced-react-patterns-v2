@@ -11,6 +11,11 @@ class Toggle extends React.Component {
   // This is handy because it makes the relationship between the
   // parent Toggle component and the child Candy component more explicit
   // 🐨 You'll need to create three such components here: On, Off, and Button
+  static On = props => (props.on ? props.children : null)
+  static Off = props => (props.on ? null : props.children)
+  static Button = ({on, toggle, ...props}) => (
+    <Switch on={on} onClick={toggle} {...props} />
+  )
   //    The button will be responsible for rendering the <Switch /> (with the right props)
   // 💰 Combined with changes you'll make in the `render` method, these should
   //    be able to accept `on`, `toggle`, and `children` as props.
@@ -28,13 +33,20 @@ class Toggle extends React.Component {
     // well as the internal `toggle` function for them to work properly. So here we can
     // take all this.props.children and make a copy of them that has those props.
     //
+
     // To do this, you can use:
     // 1. React.Children.map: https://reactjs.org/docs/react-api.html#reactchildrenmap
     // 2. React.cloneElement: https://reactjs.org/docs/react-api.html#cloneelement
     //
     // 🐨 you'll want to completely replace the code below with the above logic.
-    const {on} = this.state
-    return <Switch on={on} onClick={this.toggle} />
+    // const {on} = this.state
+    // return <Switch on={on} onClick={this.toggle} />
+    return React.Children.map(this.props.children, childElement => {
+      return React.cloneElement(childElement, {
+        on: this.state.on,
+        toggle: this.toggle,
+      })
+    })
   }
 }
 
