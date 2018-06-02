@@ -6,6 +6,15 @@ import {Switch} from '../switch'
 const callAll = (...fns) => (...args) =>
   fns.forEach(fn => fn && fn(...args))
 
+const isEmptyObject = obj => {
+  for (var prop in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, prop)) {
+      return false
+    }
+  }
+  return true
+}
+
 // Render props allow users to be in control over the UI based on state.
 // State reducers allow users to be in control over logic based on actions.
 // This idea is similar to redux, but only coincidentally.
@@ -27,6 +36,7 @@ class Toggle extends React.Component {
   static defaultProps = {
     initialOn: false,
     onReset: () => {},
+    stateReducer: (changes = {}) => changes,
     // 🐨 let's add a default stateReducer here. It should return
     // the changes object as it is passed.
   }
@@ -38,9 +48,24 @@ class Toggle extends React.Component {
   // - callback: Function called after the state has been updated
   // This will call setState with an updater function (a function that receives the state).
   // If the changes are a function, then call that function with the state to get the actual changes
-  //
-  // 🐨 Call this.props.stateReducer with the `state` and `changes` to get the user changes.
-  //
+  internalSetState = (changes, callback) => {
+    this.setState(currentState => {
+      return [changes]
+        .map(c => (typeof c === 'function' ? c(currentState) : c))
+        .map(c => this.props.stateReducer(currentState, c) || {})
+        .map(c => (Object.keys(c).length ? c : null))[0]
+      // const changesObject =
+      //   typeof changes === 'function'
+      //     ? changes(currentState)
+      //     : changes
+      // const reducedChanges =
+      //   this.props.stateReducer(currentState, changesObject) || {}
+      // return Object.keys(reducedChanges).length
+      //   ? reducedChanges
+      //   : null
+    }, callback)
+  }
+
   // 🐨 Then, if the returned value exists and has properties, return that from your updater function.
   // If it does not exist or is an empty object, then return null (avoids an unecessary re-render).
   //
@@ -49,11 +74,11 @@ class Toggle extends React.Component {
   // 🐨 Finally, update all pre-existing instances of this.setState
   // to this.internalSetState
   reset = () =>
-    this.setState(this.initialState, () =>
+    this.internalSetState(this.initialState, () =>
       this.props.onReset(this.state.on),
     )
   toggle = () =>
-    this.setState(
+    this.internalSetState(
       ({on}) => ({on: !on}),
       () => this.props.onToggle(this.state.on),
     )
